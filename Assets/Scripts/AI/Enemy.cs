@@ -19,6 +19,7 @@ public class Enemy : MonoBehaviour
     // which state the enemy is in
     public EnemyState state = EnemyState.patrol;
     public Transform lastDetectedArea;
+    private GameObject player;
     // Start is called before the first frame update
     void Start()
     {
@@ -55,6 +56,9 @@ public class Enemy : MonoBehaviour
             else if (!isWaiting)
                 SearchForPlayer();
         }
+        else if (state == EnemyState.chase) {
+            chasePlayer();
+        }
             
     }
 
@@ -90,5 +94,37 @@ public class Enemy : MonoBehaviour
         Debug.Log("Search");
         isWaiting = true;
         StartCoroutine(DoAnAction());
+    }
+
+    public void chasePlayer() {
+        Debug.Log("Chasing");
+        agent.isStopped = true;
+        agent.ResetPath();
+        RaycastHit hitinfo;
+        Physics.Linecast(transform.position, player.transform.position, out hitinfo);
+        if (hitinfo.collider.gameObject.tag == "Player") {
+            lastDetectedArea = player.transform;
+            SetNextWaypoint(player.transform.position);
+        }
+        else {
+            state = EnemyState.search;
+            searchWaypoints = new Vector3[] {lastDetectedArea.position};
+            searchWaypoint = 0;
+        }
+    }
+
+    // When something enters the look trigger
+    void OnTriggerEnter (Collider col) {
+        RaycastHit hitinfo;
+        if (col.gameObject.tag == "Player") {
+            Physics.Linecast(transform.position, col.transform.position, out hitinfo);
+            if (hitinfo.collider.gameObject.tag == "Player") {
+                state = EnemyState.chase;
+                player = col.gameObject;
+                suspicion += 5f;
+                minSuspicion = 0.5f;
+                chasePlayer();
+            }
+        }
     }
 }
