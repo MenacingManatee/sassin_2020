@@ -13,6 +13,7 @@ public class Enemy : MonoBehaviour
     public int currWaypoint = 0;
     private int searchWaypoint = 0;
     private bool isWaiting = false;
+    private bool isChasing = false;
     public float searchTime = 2f;
     public float suspicion = 0f;
     private float minSuspicion = 0f;
@@ -41,7 +42,7 @@ public class Enemy : MonoBehaviour
             currWaypoint -= 1;
             state = EnemyState.patrol;
         }
-        else if (suspicion >= 1f && state != EnemyState.search && lastDetectedArea) {
+        else if (suspicion >= 1f && state != EnemyState.search && lastDetectedArea && !isChasing) {
             state = EnemyState.search;
         }
         if (state == EnemyState.patrol && !agent.pathPending && agent.remainingDistance < 0.5f && !isWaiting) {
@@ -98,16 +99,19 @@ public class Enemy : MonoBehaviour
 
     public void chasePlayer() {
         Debug.Log("Chasing");
+        isChasing = true;
         agent.isStopped = true;
         agent.ResetPath();
         RaycastHit hitinfo;
         Physics.Linecast(transform.position, player.transform.position, out hitinfo);
         if (hitinfo.collider.gameObject.tag == "Player") {
+            Debug.Log("Seen");
             lastDetectedArea = player.transform;
             SetNextWaypoint(player.transform.position);
         }
         else {
             state = EnemyState.search;
+            isChasing = false;
             searchWaypoints = new Vector3[] {lastDetectedArea.position};
             searchWaypoint = 0;
         }
@@ -121,7 +125,8 @@ public class Enemy : MonoBehaviour
             if (hitinfo.collider.gameObject.tag == "Player") {
                 state = EnemyState.chase;
                 player = col.gameObject;
-                suspicion += 5f;
+                if (suspicion <= 15f)
+                    suspicion += 5f;
                 minSuspicion = 0.5f;
                 chasePlayer();
             }
