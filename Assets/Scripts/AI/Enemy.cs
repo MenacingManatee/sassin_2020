@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.SceneManagement;
 
 
 // Allows an object with a navmeshagent to patrol to preset waypoints on most efficient path
@@ -23,6 +24,9 @@ public class Enemy : MonoBehaviour
     public Transform lastDetectedArea;
     private GameObject player;
     private float t = 0f;
+    private Coroutine c;
+    private bool cr_running = false;
+    private bool dontLook = false;
     // Start is called before the first frame update
     void Start()
     {
@@ -58,7 +62,7 @@ public class Enemy : MonoBehaviour
             SearchForPlayer();
         }
         else if (state == EnemyState.search && !agent.pathPending && agent.remainingDistance < 0.5f) {
-            if (searchWaypoint + 1 >= searchWaypoints.Length && suspicion >= 1f)
+            if (searchWaypoint + 1 >= searchWaypoints.Length && suspicion >= minSuspicion)
                 suspicion -= Time.deltaTime / 2;
             if (!isWaiting)
                 SearchForPlayer();
@@ -86,9 +90,14 @@ public class Enemy : MonoBehaviour
         isWaiting = false;
     }
     public void attractAttention(Transform pos, float addedSuspicion) {
+        dontLook = true;
         minSuspicion = 0.5f;
         suspicion += addedSuspicion;
         if (suspicion >= 1f) {
+            if (cr_running) {
+                StopCoroutine(c);
+                isWaiting = false;
+            }
             agent.isStopped = true;
             agent.ResetPath();
             lastDetectedArea = pos;
@@ -99,7 +108,11 @@ public class Enemy : MonoBehaviour
     }
     public void SearchForPlayer() {
         isWaiting = true;
-        StartCoroutine(LookAround());
+        if (!dontLook)
+            c = StartCoroutine(LookAround());
+        else
+            DoAnAction();
+        dontLook = false;
     }
 
     public void chasePlayer() {
@@ -138,6 +151,7 @@ public class Enemy : MonoBehaviour
     }
 
     IEnumerator LookAround() {
+        cr_running = true;
         t = 0;
         float RotationSpeed = 90f;
         while (t < 350) { // full left then right
@@ -149,5 +163,19 @@ public class Enemy : MonoBehaviour
             yield return null;
         }
         DoAnAction();
+        cr_running = false;
+    }
+
+    void OnCollisionEnter(Collision col) {
+        if (col.gameObject.tag == "Player") {
+            if (col.gameObject.GetComponent<PlayerState>().state == PlayerStates.suspicious)
+                SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
+        if (col.gameObject.tag == "Distraction") {
+            Destroy(col.gameObject); // Needs to be swapped for a check later
+            suspicion = minSuspicion;
+            state = EnemyState.patrol;
+            searchWaypoint -= 1;
+        }
     }
 }
