@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,26 +9,41 @@ using UnityEngine.SceneManagement;
 // Allows an object with a navmeshagent to patrol to preset waypoints on most efficient path
 public class Enemy : MonoBehaviour
 {
+    // All waypoints
     public Transform[] wayPoints;
+    // Waypoints auto generated while searching
     private Vector3[] searchWaypoints;
+    // The navmeshagent component
     private NavMeshAgent agent;
+    // index of current waypoint
     public int currWaypoint = 0;
+    // index of search waypoint
     private int searchWaypoint = 0;
+    // Is the agent currently waiting
     private bool isWaiting = false;
+    // is the agent currently chasing
     private bool isChasing = false;
-    public float searchTime = 2f;
+    // Agent's suspicion of player
     public float suspicion = 0f;
+    // minimum suspicion
     private float minSuspicion = 0f;
+    // maximum suspicion
     private float maxSuspicion = 8f;
     // which state the enemy is in
     public EnemyState state = EnemyState.patrol;
+    // Last position player was seen
     public Transform lastDetectedArea;
+    // Player - used for smoother chasing
     private GameObject player;
+    // spin timer
     private float t = 0f;
+    // used for cancelling coroutines
     private Coroutine c;
+    // is a coroutine running
     private bool cr_running = false;
+    // should the agent look around
     private bool dontLook = false;
-    // Start is called before the first frame update
+    // Initializes agent and pathing. Unparents waypoints
     void Start()
     {
         wayPoints[0].parent.parent = null;
@@ -40,13 +56,12 @@ public class Enemy : MonoBehaviour
         SetNextWaypoint(wayPoints[0].position);
     }
 
-    // Update is called once per frame
+    // State switching
     void Update()
     {
-        if (suspicion < minSuspicion)
-            suspicion = minSuspicion;
-        if (suspicion > maxSuspicion)
-            suspicion = maxSuspicion;
+        // Clamp suspicion to min and max
+        suspicion = Mathf.Clamp(suspicion, minSuspicion, maxSuspicion);
+
         if (suspicion < 1f && state != EnemyState.patrol) {
             currWaypoint -= 1;
             state = EnemyState.patrol;
@@ -175,7 +190,7 @@ public class Enemy : MonoBehaviour
             Destroy(col.gameObject); // Needs to be swapped for a check later
             suspicion = minSuspicion;
             state = EnemyState.patrol;
-            searchWaypoint -= 1;
+            currWaypoint -= 1;
         }
     }
 }
