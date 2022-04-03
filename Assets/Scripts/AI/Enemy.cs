@@ -26,6 +26,7 @@ public class Enemy : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        wayPoints[0].parent.parent = null;
         agent = GetComponent<NavMeshAgent>();
         agent.autoBraking = true;
         agent.autoRepath = true;
@@ -140,7 +141,6 @@ public class Enemy : MonoBehaviour
         t = 0;
         float RotationSpeed = 90f;
         while (t < 350) { // full left then right
-            Debug.Log(t);
             if (t <= 90)
                 transform.Rotate (Vector3.up * (RotationSpeed * Time.deltaTime));
             else if (t >= 150 && t <= 320)

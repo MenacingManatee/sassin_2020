@@ -28,11 +28,17 @@ public class Distraction : MonoBehaviour
             Collider[] hitColliders = Physics.OverlapSphere(transform.position, overlapSphereRadius);
             foreach (var collider in hitColliders) {
                 if (collider.gameObject.tag == "Enemy") {
-                    Debug.Log("SentDetection");
                     Enemy e = collider.gameObject.GetComponent<Enemy>();
-                    if (!e)
+                    if (!e) 
                         Debug.Log(string.Format("No enemy script found on enemy {0}", e.gameObject.name));
-                    e.attractAttention(transform, addedSuspicion);
+                    else
+                        e.attractAttention(transform, addedSuspicion);
+                } else if (collider.gameObject.tag == "Civillian") {
+                    Civillian c = collider.gameObject.GetComponent<Civillian>();
+                    if (!c) 
+                        Debug.Log(string.Format("No enemy script found on enemy {0}", c.gameObject.name));
+                    else
+                        c.attractAttention(transform, addedSuspicion);
                 }
             }
         }

@@ -11,3 +11,8 @@ public enum PlayerStates {
     innocuous,
     suspicious
 }
+
+public enum CivillianState {
+    normal,
+    nosy
+}
