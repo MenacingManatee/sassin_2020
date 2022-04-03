@@ -17,10 +17,12 @@ public class Enemy : MonoBehaviour
     public float searchTime = 2f;
     public float suspicion = 0f;
     private float minSuspicion = 0f;
+    private float maxSuspicion = 8f;
     // which state the enemy is in
     public EnemyState state = EnemyState.patrol;
     public Transform lastDetectedArea;
     private GameObject player;
+    private float t = 0f;
     // Start is called before the first frame update
     void Start()
     {
@@ -38,6 +40,8 @@ public class Enemy : MonoBehaviour
     {
         if (suspicion < minSuspicion)
             suspicion = minSuspicion;
+        if (suspicion > maxSuspicion)
+            suspicion = maxSuspicion;
         if (suspicion < 1f && state != EnemyState.patrol) {
             currWaypoint -= 1;
             state = EnemyState.patrol;
@@ -46,15 +50,16 @@ public class Enemy : MonoBehaviour
             state = EnemyState.search;
         }
         if (state == EnemyState.patrol && !agent.pathPending && agent.remainingDistance < 0.5f && !isWaiting) {
-            if (suspicion >= minSuspicion)
-                suspicion -= Time.deltaTime / 5;
             isWaiting = true;
-            StartCoroutine(DoAnAction());
+            if (suspicion > minSuspicion) {
+                suspicion -= Time.deltaTime / 5;
+            }
+            SearchForPlayer();
         }
         else if (state == EnemyState.search && !agent.pathPending && agent.remainingDistance < 0.5f) {
             if (searchWaypoint + 1 >= searchWaypoints.Length && suspicion >= 1f)
                 suspicion -= Time.deltaTime / 2;
-            else if (!isWaiting)
+            if (!isWaiting)
                 SearchForPlayer();
         }
         else if (state == EnemyState.chase) {
@@ -68,8 +73,7 @@ public class Enemy : MonoBehaviour
         isWaiting = false;
     }
 
-    IEnumerator DoAnAction() {
-        yield return new WaitForSeconds(searchTime);
+    void DoAnAction() {
         if (state == EnemyState.search && searchWaypoint + 1 < searchWaypoints.Length) {
             searchWaypoint = (searchWaypoint + 1) % searchWaypoints.Length;
             SetNextWaypoint(searchWaypoints[searchWaypoint]);
@@ -78,6 +82,7 @@ public class Enemy : MonoBehaviour
             currWaypoint = (currWaypoint + 1) % wayPoints.Length;
             SetNextWaypoint(wayPoints[currWaypoint].position);
         }
+        isWaiting = false;
     }
     public void attractAttention(Transform pos, float addedSuspicion) {
         minSuspicion = 0.5f;
@@ -92,20 +97,17 @@ public class Enemy : MonoBehaviour
         }
     }
     public void SearchForPlayer() {
-        Debug.Log("Search");
         isWaiting = true;
-        StartCoroutine(DoAnAction());
+        StartCoroutine(LookAround());
     }
 
     public void chasePlayer() {
-        Debug.Log("Chasing");
         isChasing = true;
         agent.isStopped = true;
         agent.ResetPath();
         RaycastHit hitinfo;
         Physics.Linecast(transform.position, player.transform.position, out hitinfo);
         if (hitinfo.collider.gameObject.tag == "Player") {
-            Debug.Log("Seen");
             lastDetectedArea = player.transform;
             SetNextWaypoint(player.transform.position);
         }
@@ -114,6 +116,7 @@ public class Enemy : MonoBehaviour
             isChasing = false;
             searchWaypoints = new Vector3[] {lastDetectedArea.position};
             searchWaypoint = 0;
+            SetNextWaypoint(searchWaypoints[searchWaypoint]);
         }
     }
 
@@ -122,14 +125,29 @@ public class Enemy : MonoBehaviour
         RaycastHit hitinfo;
         if (col.gameObject.tag == "Player") {
             Physics.Linecast(transform.position, col.transform.position, out hitinfo);
-            if (hitinfo.collider.gameObject.tag == "Player") {
+            if (hitinfo.collider.gameObject.tag == "Player" && hitinfo.collider.gameObject.GetComponent<PlayerState>().state == PlayerStates.suspicious) {
                 state = EnemyState.chase;
                 player = col.gameObject;
-                if (suspicion <= 15f)
+                if (suspicion < maxSuspicion)
                     suspicion += 5f;
                 minSuspicion = 0.5f;
                 chasePlayer();
             }
         }
+    }
+
+    IEnumerator LookAround() {
+        t = 0;
+        float RotationSpeed = 90f;
+        while (t < 350) { // full left then right
+            Debug.Log(t);
+            if (t <= 90)
+                transform.Rotate (Vector3.up * (RotationSpeed * Time.deltaTime));
+            else if (t >= 150 && t <= 320)
+                transform.Rotate (-Vector3.up * (RotationSpeed * Time.deltaTime));
+            t += RotationSpeed * Time.deltaTime;
+            yield return null;
+        }
+        DoAnAction();
     }
 }

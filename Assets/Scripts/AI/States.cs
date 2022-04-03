@@ -6,3 +6,8 @@ public enum EnemyState {
     search,
     chase
 }
+
+public enum PlayerStates {
+    innocuous,
+    suspicious
+}
