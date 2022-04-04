@@ -120,6 +120,15 @@ public class Enemy : MonoBehaviour
             NavMesh.CalculatePath(transform.position, lastDetectedArea.position, NavMesh.AllAreas, path);
             searchWaypoints = path.corners;
         }
+        if (suspicion >= 2f) {
+            Collider[] hitColliders = Physics.OverlapSphere(transform.position, 20f);
+            foreach (var collider in hitColliders) {
+                if (collider.gameObject.tag == "Enemy") {
+                    if (collider.gameObject != this.gameObject)
+                        collider.gameObject.GetComponent<Enemy>().attractAttention(lastDetectedArea, suspicion / 2);
+                }
+            }
+        }
     }
     public void SearchForPlayer() {
         isWaiting = true;
@@ -135,8 +144,17 @@ public class Enemy : MonoBehaviour
         agent.isStopped = true;
         agent.ResetPath(); // Constantly update path to point towards player
         RaycastHit hitinfo;
-        Physics.Linecast(transform.position, player.transform.position, out hitinfo); 
+        Physics.Linecast(transform.position, player.transform.position, out hitinfo);
         if (hitinfo.collider.gameObject.tag == "Player") { // if line of sight present from enemy to player
+            Collider[] hitColliders = Physics.OverlapSphere(transform.position, 20f);
+            foreach (var collider in hitColliders) {
+                if (collider.gameObject.tag == "Enemy") { // Attract other nearby enemies if LoS maintained
+                    Enemy e = collider.gameObject.GetComponent<Enemy>();
+                    e.suspicion += 3;
+                    e.state = EnemyState.chase;
+                    e.lastDetectedArea = lastDetectedArea;
+                }
+            }
             lastDetectedArea = player.transform; // log last detected are is case LoS lost
             SetNextWaypoint(player.transform.position);
         }

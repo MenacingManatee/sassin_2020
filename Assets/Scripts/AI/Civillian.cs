@@ -20,22 +20,30 @@ public class Civillian : MonoBehaviour
     private randNum r;
     // finite states for civillian
     public CivillianState state = CivillianState.normal;
+    public Material debugMat;
+    private bool destGenerated = false;
     // initializes dests and rand num generator objects
     void Start()
     {
         r = FindObjectsOfType<randNum>()[0];
         dests = FindObjectsOfType<Destinations>()[0];
+        agent = GetComponent<NavMeshAgent>();
         dests.onDestinationsGenerated += generateDest;
+    }
+
+    void OnDisable() {
+        dests.onDestinationsGenerated -= generateDest;
     }
 
     // Generates the civillian destination on destinations finished generating
     void generateDest(object sender, EventArgs e)
     {
         dest = dests.destinationPoints[r.rand.Next(dests.destinationPoints.Count)];
-        agent = GetComponent<NavMeshAgent>();
         agent.autoBraking = true;
         agent.autoRepath = true;
         agent.SetDestination(dest);
+        GetComponent<MeshRenderer>().material = debugMat;
+        destGenerated = true;
     }
 
     // State swapping
@@ -43,7 +51,7 @@ public class Civillian : MonoBehaviour
         if (suspicion > suspicionThreshhold)
             state = CivillianState.nosy;
         if (state == CivillianState.normal) {
-            if (!agent.pathPending && agent.remainingDistance < 0.5f)
+            if (destGenerated && !agent.pathPending && agent.remainingDistance < 0.5f)
                 Destroy(this.gameObject);
         }
         else {
@@ -51,6 +59,8 @@ public class Civillian : MonoBehaviour
                 StartCoroutine(wait());
             }
         }
+        if (!destGenerated)
+            generateDest(this, null);
     }
 
     // Attracts the attention of the civillian

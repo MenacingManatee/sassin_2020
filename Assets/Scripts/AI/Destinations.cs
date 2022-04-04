@@ -18,7 +18,8 @@ public class Destinations : MonoBehaviour
             if (!(point.position == transform.position))
                 destinationPoints.Add(point.position);
         }
-        handler?.Invoke(this, null);
+        EventArgs e = new EventArgs();
+        handler?.Invoke(this, e);
     }
 
     // Update is called once per frame

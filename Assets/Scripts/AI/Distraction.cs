@@ -8,7 +8,7 @@ public class Distraction : MonoBehaviour
     public float overlapSphereRadius = 30f;
     // Max suspicion added
     public float addedSuspicion = 1.1f;
-    // cooldown before can ping again. -1 for no re-use
+    // cooldown before can ping again.
     private float cooldown = 0f;
 
     // Update is called once per frame
@@ -16,7 +16,7 @@ public class Distraction : MonoBehaviour
     {
         if (cooldown > 0)
             cooldown -= Time.deltaTime;
-        else if (cooldown != -1f)
+        else
             cooldown = 0f;
     }
 
