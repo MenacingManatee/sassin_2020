@@ -66,23 +66,23 @@ public class Enemy : MonoBehaviour
             currWaypoint -= 1;
             state = EnemyState.patrol;
         }
-        else if (suspicion >= 1f && state != EnemyState.search && lastDetectedArea && !isChasing) {
+        else if (suspicion >= 1f && state != EnemyState.search && lastDetectedArea && !isChasing) { // Lost line of sight
             state = EnemyState.search;
         }
-        if (state == EnemyState.patrol && !agent.pathPending && agent.remainingDistance < 0.5f && !isWaiting) {
+        if (state == EnemyState.patrol && !agent.pathPending && agent.remainingDistance < 0.5f && !isWaiting) { // If at patrol waypoint
             isWaiting = true;
             if (suspicion > minSuspicion) {
                 suspicion -= Time.deltaTime / 5;
             }
             SearchForPlayer();
         }
-        else if (state == EnemyState.search && !agent.pathPending && agent.remainingDistance < 0.5f) {
-            if (searchWaypoint + 1 >= searchWaypoints.Length && suspicion >= minSuspicion)
+        else if (state == EnemyState.search && !agent.pathPending && agent.remainingDistance < 0.5f) { // If at search waypoint
+            if (searchWaypoint + 1 >= searchWaypoints.Length && suspicion >= minSuspicion) // If at last waypoint
                 suspicion -= Time.deltaTime / 2;
             if (!isWaiting)
                 SearchForPlayer();
         }
-        else if (state == EnemyState.chase) {
+        else if (state == EnemyState.chase) { // If chasing the player
             chasePlayer();
         }
             
@@ -133,27 +133,28 @@ public class Enemy : MonoBehaviour
     public void chasePlayer() {
         isChasing = true;
         agent.isStopped = true;
-        agent.ResetPath();
+        agent.ResetPath(); // Constantly update path to point towards player
         RaycastHit hitinfo;
-        Physics.Linecast(transform.position, player.transform.position, out hitinfo);
-        if (hitinfo.collider.gameObject.tag == "Player") {
-            lastDetectedArea = player.transform;
+        Physics.Linecast(transform.position, player.transform.position, out hitinfo); 
+        if (hitinfo.collider.gameObject.tag == "Player") { // if line of sight present from enemy to player
+            lastDetectedArea = player.transform; // log last detected are is case LoS lost
             SetNextWaypoint(player.transform.position);
         }
         else {
-            state = EnemyState.search;
+            state = EnemyState.search; // swap to searching if LoS lost
             isChasing = false;
             searchWaypoints = new Vector3[] {lastDetectedArea.position};
             searchWaypoint = 0;
-            SetNextWaypoint(searchWaypoints[searchWaypoint]);
+            SetNextWaypoint(searchWaypoints[searchWaypoint]); // Move to last known position of player
         }
     }
 
     // When something enters the look trigger
     void OnTriggerEnter (Collider col) {
         RaycastHit hitinfo;
-        if (col.gameObject.tag == "Player") {
+        if (col.gameObject.tag == "Player") { // If player in look cone
             Physics.Linecast(transform.position, col.transform.position, out hitinfo);
+            //If line of sight present start chasing player
             if (hitinfo.collider.gameObject.tag == "Player" && hitinfo.collider.gameObject.GetComponent<PlayerState>().state == PlayerStates.suspicious) {
                 state = EnemyState.chase;
                 player = col.gameObject;
@@ -165,6 +166,7 @@ public class Enemy : MonoBehaviour
         }
     }
 
+    // Looks left to right when called
     IEnumerator LookAround() {
         cr_running = true;
         t = 0;
@@ -181,8 +183,9 @@ public class Enemy : MonoBehaviour
         cr_running = false;
     }
 
+    // When the enemy bumps into something
     void OnCollisionEnter(Collision col) {
-        if (col.gameObject.tag == "Player") {
+        if (col.gameObject.tag == "Player") { // Needs changing, reboots the scene for now
             if (col.gameObject.GetComponent<PlayerState>().state == PlayerStates.suspicious)
                 SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }

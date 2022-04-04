@@ -6,14 +6,21 @@ using UnityEngine.AI;
 
 public class Civillian : MonoBehaviour
 {
+    // File containing list of all possible destinations
     Destinations dests;
+    // This civillian's destination
     public Vector3 dest;
+    // Navmesh agent
     private NavMeshAgent agent;
+    // How suspicious the civillian is of the player
     public float suspicion = 0f;
+    // Threshhold for when they become nosy
     public float suspicionThreshhold = 0f;
+    // rand num generator
     private randNum r;
+    // finite states for civillian
     public CivillianState state = CivillianState.normal;
-    // Start is called before the first frame update
+    // initializes dests and rand num generator objects
     void Start()
     {
         r = FindObjectsOfType<randNum>()[0];
@@ -21,7 +28,7 @@ public class Civillian : MonoBehaviour
         dests.onDestinationsGenerated += generateDest;
     }
 
-    // Update is called once per frame
+    // Generates the civillian destination on destinations finished generating
     void generateDest(object sender, EventArgs e)
     {
         dest = dests.destinationPoints[r.rand.Next(dests.destinationPoints.Count)];
@@ -31,6 +38,7 @@ public class Civillian : MonoBehaviour
         agent.SetDestination(dest);
     }
 
+    // State swapping
     void Update() { 
         if (suspicion > suspicionThreshhold)
             state = CivillianState.nosy;
@@ -45,6 +53,7 @@ public class Civillian : MonoBehaviour
         }
     }
 
+    // Attracts the attention of the civillian
     public void attractAttention(Transform pos, float addedSuspicion) {
         suspicion += addedSuspicion;
         if (suspicion >= 1f) {
@@ -54,6 +63,7 @@ public class Civillian : MonoBehaviour
         }
     }
 
+    // Waits for 2 seconds, then moves to original destination
     IEnumerator wait() {
         yield return new WaitForSeconds(2);
         suspicion = 0f;
