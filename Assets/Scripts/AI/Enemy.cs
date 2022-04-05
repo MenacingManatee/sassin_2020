@@ -195,13 +195,38 @@ public class Enemy : MonoBehaviour
         cr_running = true;
         t = 0;
         float RotationSpeed = 90f;
-        while (t < 350) { // full left then right
-            if (t <= 90)
+        Waypoint wp = null;
+        if (state == EnemyState.patrol)
+            wp = wayPoints[currWaypoint].GetComponent<Waypoint>();
+        yield return new WaitForSeconds(0.2f);
+        if (!wp || wp.turnLeft) {
+            while (t <= 90) {
                 transform.Rotate (Vector3.up * (RotationSpeed * Time.deltaTime));
-            else if (t >= 150 && t <= 300)
+                t += RotationSpeed * Time.deltaTime;
+                yield return null;
+            }
+            t = 0;
+            yield return new WaitForSeconds(0.5f);
+            while (t <= 90) {
                 transform.Rotate (-Vector3.up * (RotationSpeed * Time.deltaTime));
-            t += RotationSpeed * Time.deltaTime;
-            yield return null;
+                t += RotationSpeed * Time.deltaTime;
+                yield return null;
+            }
+        }
+        t = 0;
+        if (!wp || wp.turnRight) {
+            while (t <= 90) {
+                transform.Rotate (-Vector3.up * (RotationSpeed * Time.deltaTime));
+                t += RotationSpeed * Time.deltaTime;
+                yield return null;
+            }
+            t = 0;
+            yield return new WaitForSeconds(0.5f);
+            while (t <= 90) {
+                transform.Rotate (Vector3.up * (RotationSpeed * Time.deltaTime));
+                t += RotationSpeed * Time.deltaTime;
+                yield return null;
+            }
         }
         DoAnAction();
         cr_running = false;
