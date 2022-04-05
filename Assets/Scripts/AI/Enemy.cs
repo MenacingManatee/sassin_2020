@@ -43,6 +43,7 @@ public class Enemy : MonoBehaviour
     private bool cr_running = false;
     // should the agent look around
     private bool dontLook = false;
+    private bool dontIncrement = false;
     // Initializes agent and pathing. Unparents waypoints
     void Start()
     {
@@ -63,7 +64,7 @@ public class Enemy : MonoBehaviour
         suspicion = Mathf.Clamp(suspicion, minSuspicion, maxSuspicion);
 
         if (suspicion < 1f && state != EnemyState.patrol) {
-            currWaypoint -= 1;
+            dontIncrement = true;
             state = EnemyState.patrol;
         }
         else if (suspicion >= 1f && state != EnemyState.search && lastDetectedArea && !isChasing) { // Lost line of sight
@@ -95,11 +96,16 @@ public class Enemy : MonoBehaviour
 
     void DoAnAction() {
         if (state == EnemyState.search && searchWaypoint + 1 < searchWaypoints.Length) {
-            searchWaypoint = (searchWaypoint + 1) % searchWaypoints.Length;
+            if (searchWaypoint + 2 >= searchWaypoints.Length)
+                searchWaypoint = searchWaypoints.Length - 1;
+            else
+                searchWaypoint = (searchWaypoint + 2) % searchWaypoints.Length;
             SetNextWaypoint(searchWaypoints[searchWaypoint]);
         }
         else if (state == EnemyState.patrol) {
-            currWaypoint = (currWaypoint + 1) % wayPoints.Length;
+            if (!dontIncrement)
+                currWaypoint = (currWaypoint + 1) % wayPoints.Length;
+            dontIncrement = false;
             SetNextWaypoint(wayPoints[currWaypoint].position);
         }
         isWaiting = false;
@@ -192,7 +198,7 @@ public class Enemy : MonoBehaviour
         while (t < 350) { // full left then right
             if (t <= 90)
                 transform.Rotate (Vector3.up * (RotationSpeed * Time.deltaTime));
-            else if (t >= 150 && t <= 320)
+            else if (t >= 150 && t <= 300)
                 transform.Rotate (-Vector3.up * (RotationSpeed * Time.deltaTime));
             t += RotationSpeed * Time.deltaTime;
             yield return null;
@@ -207,11 +213,13 @@ public class Enemy : MonoBehaviour
             if (col.gameObject.GetComponent<PlayerState>().state == PlayerStates.suspicious)
                 SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
-        if (col.gameObject.tag == "Distraction") {
-            Destroy(col.gameObject); // Needs to be swapped for a check later
-            suspicion = minSuspicion;
-            state = EnemyState.patrol;
-            currWaypoint -= 1;
+        if (state == EnemyState.search) {
+            if (col.gameObject.tag == "Distraction") {
+                Destroy(col.gameObject); // Needs to be swapped for a check later
+                suspicion = minSuspicion;
+                state = EnemyState.patrol;
+                dontIncrement = true;
+            }
         }
     }
 }
